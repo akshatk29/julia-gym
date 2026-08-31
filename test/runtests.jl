@@ -233,6 +233,61 @@ end
 end
 
 # ---------------------------------------------------------------------------
+@testset "progress: marking done and undone by hand" begin
+    dir = mktempdir()
+    try
+        path = joinpath(dir, "progress.json")
+        s = load_store(path)
+
+        # --- mark done -----------------------------------------------------
+        set_solved!(s, "two-sum"; solved = true)
+        e = entry_for(s, "two-sum")
+        @test e["solved"] === true
+        @test e["manual"] === true          # flagged, so it is never mistaken
+        @test e["solved_at"] !== nothing    #   for a verified solve
+        @test e["attempts"] == 0            # marking is not an attempt
+
+        # --- mark undone: completion clears, history survives ---------------
+        save_draft!(s, "two-sum", "my work in progress")
+        take_hint!(s, "two-sum", 2)
+        set_solved!(s, "two-sum"; solved = false)
+        e = entry_for(s, "two-sum")
+        @test e["solved"] === false
+        @test e["manual"] === false
+        @test e["solved_at"] === nothing
+        @test e["draft"] == "my work in progress"   # work is never destroyed
+        @test e["hints_used"] == 2
+
+        # --- earning it supersedes claiming it -----------------------------
+        set_solved!(s, "greet"; solved = true)
+        @test entry_for(s, "greet")["manual"] === true
+        record_attempt!(s, "greet"; solved = true, wall_ms = 800, code = "greet(n)=1")
+        e = entry_for(s, "greet")
+        @test e["solved"] === true
+        @test e["manual"] === false         # a real pass clears the manual flag
+        @test e["best_ms"] == 800
+
+        # --- survives a reload ---------------------------------------------
+        set_solved!(s, "fizzbuzz"; solved = true)
+        s2 = load_store(path)
+        @test entry_for(s2, "fizzbuzz")["manual"] === true
+        @test entry_for(s2, "two-sum")["solved"] === false
+
+        # --- a file written before `manual` existed still loads -------------
+        write(path, """{"version":1,"puzzles":{"old":{"solved":true,"attempts":3,
+              "hints_used":0,"solution_viewed":false,"draft":"","best_ms":null,
+              "solved_at":null}}}""")
+        s3 = load_store(path)
+        e = entry_for(s3, "old")
+        @test e["manual"] === false         # backfilled, not an error
+        @test e["solved"] === true
+        @test e["attempts"] == 3
+    finally
+        rm(dir; recursive = true, force = true)
+    end
+end
+
+# ---------------------------------------------------------------------------
 @testset "puzzles: all 15 valid, all solutions pass, all starters fail (§11)" begin
     puzzles, problems = load_puzzles(ROOT)
 

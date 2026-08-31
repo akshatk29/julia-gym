@@ -359,3 +359,23 @@ latency measurement from §6 — add the warm worker only if the numbers call fo
   failure of the app, not of the player.
 - Resist adding a puzzle editor, a leaderboard, or accounts. The value is 15 good puzzles and
   a run loop that feels instant.
+
+---
+
+## 13. Added after v1
+
+Two changes requested once the game was in use, both outside the original spec:
+
+- **Mark a puzzle done / undone by hand** (`POST /api/puzzles/:id/status`). A
+  manual completion is recorded as `manual` and never earns the three-dot mark
+  in §8's rail — that stays reserved for a puzzle solved by passing its tests
+  unaided. Passing them later clears the flag.
+
+- **Closing the browser stops the server.** An unload beacon
+  (`POST /api/goodbye`) plus a heartbeat (`POST /api/heartbeat`) as a backstop.
+  Two signals rather than one because browsers throttle background-tab timers
+  to about once a minute, so a heartbeat deadline short enough to feel
+  responsive would kill the server when the player merely switched tabs.
+  `--keep-alive` disables it.
+
+Also `--data PATH`, so a test run cannot write to a real player's progress.

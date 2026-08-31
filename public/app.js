@@ -264,6 +264,35 @@ function renderProblem(d) {
   $('fn-name').innerHTML = `define <b>${escapeHTML(d.entrypoint)}</b>`;
   $('hint-btn').disabled = d.hint_count === 0;
   $('hint-btn').textContent = d.hint_count ? `Hint (${d.hint_count})` : 'Hint';
+  renderMarkButton(d.solved);
+}
+
+/* --- Marking a puzzle done by hand ---------------------------------------
+   One button rather than two: it always offers the action that applies, so
+   there is never a button that would do nothing. */
+
+function renderMarkButton(solved) {
+  const b = $('mark-btn');
+  b.textContent = solved ? 'Mark undone' : 'Mark done';
+  b.title = solved
+    ? 'Mark this puzzle as not finished'
+    : 'Mark this puzzle finished without running it';
+  b.classList.toggle('marked', !!solved);
+}
+
+async function toggleMark() {
+  if (!state.current) return;
+  const next = !state.current.solved;
+  try {
+    await postJSON(`/api/puzzles/${encodeURIComponent(state.current.id)}/status`,
+                   { solved: next });
+    state.current.solved = next;
+    renderMarkButton(next);
+    await refreshPuzzles();
+    toast(next ? 'Marked done.' : 'Marked not done.');
+  } catch (e) {
+    toast(e.message);
+  }
 }
 
 /* --- Results ------------------------------------------------------------- */
@@ -384,7 +413,11 @@ async function runSubmission() {
       code: state.editor.getValue(),
     });
     renderResults(r);
-    if (r.solved) await refreshPuzzles();
+    if (r.solved) {
+      state.current.solved = true;
+      renderMarkButton(true);
+      await refreshPuzzles();
+    }
   } catch (e) {
     $('results').innerHTML = '';
     const b = document.createElement('div');
@@ -470,7 +503,9 @@ function confirmSolution() {
     p.style.margin = '0';
     p.textContent = d.solved
       ? 'You have already solved this one — comparing approaches is the point.'
-      : 'Once seen, this puzzle is marked as solved with help. There is no undo.';
+      : 'This does not solve the puzzle for you: it stays unsolved until your '
+        + 'own code passes, or you mark it done yourself. It is recorded that '
+        + 'you looked, so the puzzle will not count as a clean solve.';
     body.appendChild(p);
   }, [
     { label: 'Cancel', onClick: closePanel },
@@ -573,6 +608,44 @@ async function selectPuzzle(id) {
   state.editor.focus();
 }
 
+/* --- Heartbeat -----------------------------------------------------------
+   While this page is open it tells the server so every few seconds. When the
+   heartbeats stop the server shuts itself down, so closing the browser closes
+   the game and there is nothing left to Ctrl-C.
+
+   The interval is well under the server's grace period, so a reload or a
+   momentarily busy main thread never looks like a departure. */
+
+const HEARTBEAT_MS = 3000;
+
+function beat() {
+  fetch('/api/heartbeat', { method: 'POST', keepalive: true }).catch(() => {});
+}
+
+// Sent as the page goes away. sendBeacon is the only send that reliably
+// survives unload — a normal fetch is cancelled with the page.
+function goodbye() {
+  try {
+    navigator.sendBeacon('/api/goodbye', new Blob([], { type: 'text/plain' }));
+  } catch (_) { /* the heartbeat backstop covers us */ }
+}
+
+function startHeartbeat() {
+  beat();
+  setInterval(beat, HEARTBEAT_MS);
+
+  // `pagehide` is the reliable one: unlike `beforeunload` it fires on mobile
+  // and on tab close, and unlike `unload` it does not break the back/forward
+  // cache. A reload fires it too, which is why the server waits before acting.
+  window.addEventListener('pagehide', goodbye);
+
+  document.addEventListener('visibilitychange', () => {
+    // Coming back from a background tab or from sleep: check in at once
+    // rather than waiting out a throttled interval.
+    if (document.visibilityState === 'visible') beat();
+  });
+}
+
 /* --- Boot ---------------------------------------------------------------- */
 
 async function main() {
@@ -583,7 +656,9 @@ async function main() {
   $('solution-btn').addEventListener('click', confirmSolution);
   $('reset-btn').addEventListener('click', confirmReset);
   $('theme-btn').addEventListener('click', cycleTheme);
+  $('mark-btn').addEventListener('click', toggleMark);
   initTheme();
+  startHeartbeat();
   $('panel-scrim').addEventListener('click', (e) => {
     if (e.target === $('panel-scrim')) closePanel();
   });

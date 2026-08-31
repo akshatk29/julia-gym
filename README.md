@@ -50,13 +50,50 @@ then take the direct path. Moving the project somewhere unprotected (say
 
 Re-run `./build/make_app.sh` after changing the launcher or the icon.
 
+## While you play
+
+**Closing the browser stops the server.** There is nothing to Ctrl-C. The page
+tells the server it is leaving as it unloads, and sends a heartbeat while it is
+open as a backstop for the cases where it cannot — a crash, or a force-quit.
+
+Switching to another tab does *not* stop it. That distinction is the reason for
+two signals rather than one: browsers throttle background timers to roughly one
+tick a minute, so a heartbeat deadline short enough to feel responsive would
+shut the game down merely because you looked at another tab. The explicit
+goodbye handles the common case in a few seconds; the heartbeat deadline is two
+minutes and only catches the rest. A reload survives both.
+
+Use `--keep-alive` to switch this off and leave the server running.
+
+**Marking a puzzle done by hand.** The toolbar button marks the current puzzle
+complete, and reads *Mark undone* once it is, so you can put it back. Marking
+undone keeps your attempts, hints and saved draft — only the completion is
+cleared.
+
+A puzzle ticked off by hand gets a filled dot on the rail but not the three-dot
+mark; that stays reserved for a puzzle solved by passing its tests with no
+hints and no look at the solution. Passing the tests later upgrades a manual
+tick to a real solve.
+
+Looking at the reference solution does **not** mark a puzzle complete — it only
+records that you looked, which costs the three-dot mark.
+
+## Flags
+
+```
+julia --project=. server.jl [--port 8080] [--data PATH] [--keep-alive] [--no-validate]
+```
+
+`--data PATH` points progress at a different file. Use it for experiments and
+throwaway runs so they cannot touch your real solves and drafts.
+
 ## Tests
 
 ```bash
 julia --project=. test/runtests.jl
 ```
 
-170 assertions covering the comparison logic, the runner's result shape, the
+188 assertions covering the comparison logic, the runner's result shape, the
 timeout and abort paths, stdout capture and truncation, progress persistence,
 and the invariant that every reference solution passes while every starter
 fails.

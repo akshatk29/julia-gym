@@ -410,6 +410,13 @@ button.btn {
 button.btn:hover:not(:disabled) { background: var(--surface-alt); border-color: var(--accent); }
 button.btn:disabled { opacity: .45; cursor: not-allowed; }
 
+/* A puzzle already marked done: the button offers the reverse, and says so
+   quietly rather than competing with Run. */
+button.btn.marked {
+  border-color: var(--pass);
+  color: var(--pass-text);
+}
+
 button.btn.primary {
   background: var(--accent); border-color: var(--accent); color: var(--on-accent);
   font-weight: 600;

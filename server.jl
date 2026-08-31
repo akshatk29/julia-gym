@@ -3,6 +3,12 @@
 # Julia Gym — entry point.
 #
 #     julia --project=. server.jl [--port 8080] [--no-validate]
+#                                 [--data PATH] [--keep-alive]
+#
+#   --data PATH   progress file to use, instead of data/progress.json. Point
+#                 tests and experiments at a throwaway path so they cannot
+#                 touch a real player's solves and drafts.
+#   --keep-alive  never shut down when the browser goes away.
 #
 const ROOT = @__DIR__
 
@@ -17,9 +23,32 @@ using .Puzzles.Execute
 using .Progress
 using HTTP, JSON3
 
-const PUBLIC        = joinpath(ROOT, "public")
-const PROGRESS_PATH = joinpath(ROOT, "data", "progress.json")
-const MAX_CODE_BYTES = 256 * 1024
+const PUBLIC          = joinpath(ROOT, "public")
+const DEFAULT_PROGRESS = joinpath(ROOT, "data", "progress.json")
+const MAX_CODE_BYTES   = 256 * 1024
+
+# --- Shutting down with the browser ---------------------------------------
+# Closing the game should stop the server, so nobody has to remember to Ctrl-C
+# it. Two signals, because neither alone is trustworthy:
+#
+#   * A "goodbye" the page sends as it unloads. Prompt, but not guaranteed —
+#     a crash or a force-quit sends nothing.
+#
+#   * A heartbeat, as a backstop for exactly those cases. It cannot be the
+#     primary signal: browsers throttle timers in background tabs to roughly
+#     once a minute, so a short heartbeat deadline would shut the game down
+#     merely because the player switched tabs. Hence the long deadline here
+#     and the short one after a goodbye.
+#
+# The watchdog only arms after the *first* heartbeat. Until a browser has
+# actually connected there is nothing to miss, so starting the server and
+# poking it with curl never trips it, and neither does a slow first page load.
+const HEARTBEAT_GRACE = 120.0    # silence that means the browser is really gone
+const GOODBYE_GRACE   = 5.0      # after an explicit goodbye — long enough that a
+                                 # reload's fresh page can check back in first
+const LAST_SEEN       = Ref(0.0)
+const LEAVING_AT      = Ref(0.0) # 0 when nobody has said goodbye
+const WATCHDOG_ARMED  = Ref(false)
 
 # Loaded at boot, replaced never. A puzzle set that changes under a running
 # server would make the ids in progress.json ambiguous.
@@ -76,7 +105,11 @@ puzzle_summary(p::Puzzle, entry) = Dict(
     "attempts"   => entry["attempts"],
     "hints_used" => entry["hints_used"],
     "best_ms"    => entry["best_ms"],
+    "manual"     => entry["manual"] === true,
+    # The three-dot mark is for a puzzle solved by passing its tests unaided —
+    # not one ticked off by hand.
     "clean"      => entry["solved"] === true &&
+                    entry["manual"] !== true &&
                     entry["hints_used"] == 0 &&
                     entry["solution_viewed"] !== true,
 )
@@ -100,6 +133,7 @@ puzzle_detail(p::Puzzle, entry) = Dict(
     "hidden_count" => p.hidden_count,
     "hint_count"   => length(p.hints),
     "solved"       => entry["solved"],
+    "manual"       => entry["manual"] === true,
     "attempts"     => entry["attempts"],
     "hints_used"   => entry["hints_used"],
     "solution_viewed" => entry["solution_viewed"],
@@ -146,6 +180,75 @@ function public_result(outcome::RunOutcome)
         "error" => r["error"], "compile_ms" => r["compile_ms"],
         "timed_out" => false, "wall_ms" => outcome.wall_ms,
     )
+end
+
+# ---------------------------------------------------------------------------
+# Browser watchdog
+# ---------------------------------------------------------------------------
+
+"""
+    start_watchdog()
+
+Poll for a missing heartbeat and shut the server down when the page is gone.
+
+The grace period matters: a reload, a hard refresh, or a moment of a busy main
+thread all interrupt the heartbeat briefly, and none of them mean the player
+has left. Ten seconds is long enough to ride those out and short enough that
+closing the tab feels like quitting the app.
+"""
+function start_watchdog()
+    @async begin
+        while true
+            sleep(1.0)
+            WATCHDOG_ARMED[] || continue
+            now = time()
+            silent = now - LAST_SEEN[]
+
+            # An explicit goodbye, with no page checking back in afterwards.
+            # The wait matters: a reload fires the same goodbye, and the new
+            # page needs a moment to load and send its first heartbeat. Another
+            # open tab counts too — its heartbeat cancels the departure.
+            said_bye = LEAVING_AT[] > 0 &&
+                       (now - LEAVING_AT[]) > GOODBYE_GRACE &&
+                       silent > GOODBYE_GRACE
+
+            if said_bye || silent > HEARTBEAT_GRACE
+                println()
+                println("  Browser closed — shutting down.")
+                flush(stdout)
+                exit(0)
+            end
+        end
+    end
+    return
+end
+
+"""
+    api_goodbye(req)
+
+Sent by the page as it unloads, via `navigator.sendBeacon`. Not a command to
+exit — just a note that it is leaving, which the watchdog acts on only if
+nothing checks back in.
+"""
+function api_goodbye(_)
+    LEAVING_AT[] = time()
+    return json_ok(Dict("ok" => true))
+end
+
+"""
+    api_heartbeat(req)
+
+Called by the open page every few seconds. The first one arms the watchdog.
+"""
+function api_heartbeat(_)
+    LAST_SEEN[]  = time()
+    LEAVING_AT[] = 0.0          # someone is here; cancel any pending departure
+    if !WATCHDOG_ARMED[]
+        WATCHDOG_ARMED[] = true
+        println("  Browser connected.")
+        flush(stdout)
+    end
+    return json_ok(Dict("ok" => true, "grace_s" => HEARTBEAT_GRACE))
 end
 
 # ---------------------------------------------------------------------------
@@ -239,6 +342,29 @@ function api_run(req)
     end
 end
 
+"""
+    api_status(req, id)
+
+Mark a puzzle complete or incomplete by hand.
+
+A manual completion is recorded as `manual`, so it is never mistaken for a
+verified one: the rail fills the dot, but the three-dot mark stays reserved for
+a puzzle actually solved by passing its tests unaided.
+"""
+function api_status(req, id)
+    find_puzzle(id) === nothing && return json_err(404, "No puzzle with id \"$id\".")
+    local payload
+    try
+        payload = body_json(req)
+    catch e
+        return json_err(400, "Could not read the request: " * sprint(showerror, e))
+    end
+    solved = get(payload, "solved", nothing)
+    solved isa Bool || return json_err(400, "\"solved\" must be true or false.")
+    set_solved!(STATE[:store], id; solved = solved, manual = true)
+    return json_ok(Dict("id" => id, "solved" => solved, "manual" => solved))
+end
+
 function api_draft(req, id)
     find_puzzle(id) === nothing && return json_err(404, "No puzzle with id \"$id\".")
     local payload
@@ -273,13 +399,16 @@ function handle_api(req::HTTP.Request, path::AbstractString)
     path == "/api/puzzles"  && m == "GET"  && return api_puzzles(req)
     path == "/api/run"      && m == "POST" && return api_run(req)
     path == "/api/progress" && m == "GET"  && return api_progress(req)
+    path == "/api/heartbeat" && m == "POST" && return api_heartbeat(req)
+    path == "/api/goodbye"   && m == "POST" && return api_goodbye(req)
     path == "/api/reset"    && m == "POST" && return api_reset(req)
 
     for (pattern, method, fn) in (
             ("/api/puzzles/:id",          "GET",  api_puzzle),
             ("/api/puzzles/:id/hint",     "GET",  api_hint),
             ("/api/puzzles/:id/solution", "GET",  api_solution),
-            ("/api/puzzles/:id/draft",    "POST", api_draft))
+            ("/api/puzzles/:id/draft",    "POST", api_draft),
+            ("/api/puzzles/:id/status",   "POST", api_status))
         params = match_route(pattern, path)
         params === nothing && continue
         method == m || return json_err(405, "$m is not allowed on $path.")
@@ -324,6 +453,11 @@ function main()
     i = findfirst(==("--port"), ARGS)
     i !== nothing && i < length(ARGS) && (port = parse(Int, ARGS[i+1]))
     validate_all = !("--no-validate" in ARGS)
+    keep_alive   = "--keep-alive" in ARGS
+
+    progress_path = DEFAULT_PROGRESS
+    j = findfirst(==("--data"), ARGS)
+    j !== nothing && j < length(ARGS) && (progress_path = abspath(ARGS[j+1]))
 
     vendor_complete() || (@info "Vendoring editor assets…"; vendor_assets())
 
@@ -336,7 +470,12 @@ function main()
 
     STATE[:puzzles]  = puzzles
     STATE[:problems] = problems
-    STATE[:store]    = load_store(PROGRESS_PATH)
+    STATE[:store]    = load_store(progress_path)
+    progress_path == DEFAULT_PROGRESS ||
+        println("  Progress file: $progress_path")
+
+    keep_alive ? println("  Staying up when the browser closes (--keep-alive).") :
+                 start_watchdog()
 
     println()
     println("  Julia Gym — ready")

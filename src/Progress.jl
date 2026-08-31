@@ -13,7 +13,7 @@ module Progress
 using JSON3
 
 export ProgressStore, load_store, snapshot, record_attempt!, save_draft!,
-       take_hint!, mark_solution_viewed!, reset!, entry_for
+       take_hint!, mark_solution_viewed!, reset!, entry_for, set_solved!
 
 const LOCK = ReentrantLock()
 
@@ -24,6 +24,8 @@ end
 
 blank_entry() = Dict{String,Any}(
     "solved"          => false,
+    # true when the player ticked it off by hand rather than passing the tests
+    "manual"          => false,
     "attempts"        => 0,
     "hints_used"      => 0,
     "solution_viewed" => false,
@@ -122,6 +124,8 @@ function record_attempt!(store::ProgressStore, id::AbstractString;
                 e["solved"] = true
                 e["solved_at"] = round(Int, time())
             end
+            # Passing the tests supersedes a manual tick: the solve is now real.
+            e["manual"] = false
             best = e["best_ms"]
             if best === nothing || wall_ms < best
                 e["best_ms"] = Int(wall_ms)
@@ -152,6 +156,31 @@ mark_solution_viewed!(store::ProgressStore, id::AbstractString) =
     with_store(store) do s
         entry_for(s, id)["solution_viewed"] = true
     end
+
+"""
+    set_solved!(store, id; solved, manual=true)
+
+Mark a puzzle complete or incomplete by hand.
+
+Marking incomplete clears only the completion — attempts, hints and the saved
+draft are history and stay put, so ticking a puzzle back to unsolved never
+costs the player their work.
+"""
+function set_solved!(store::ProgressStore, id::AbstractString;
+                     solved::Bool, manual::Bool = true)
+    with_store(store) do s
+        e = entry_for(s, id)
+        e["solved"] = solved
+        if solved
+            e["manual"] = manual
+            e["solved_at"] === nothing && (e["solved_at"] = round(Int, time()))
+        else
+            e["manual"] = false
+            e["solved_at"] = nothing
+        end
+        return e
+    end
+end
 
 """
     reset!(store)
