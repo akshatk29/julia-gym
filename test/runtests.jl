@@ -6,6 +6,7 @@
 # persistence — plus the invariant that every starter fails.
 
 using Test
+using HTTP, JSON3
 
 const ROOT = dirname(@__DIR__)
 
@@ -282,6 +283,76 @@ end
         @test e["manual"] === false         # backfilled, not an error
         @test e["solved"] === true
         @test e["attempts"] == 3
+    finally
+        rm(dir; recursive = true, force = true)
+    end
+end
+
+# ---------------------------------------------------------------------------
+# This one boots the real server. The bug it guards against lived precisely in
+# the gap between the unit tests (which never started a server) and the manual
+# checks (which always used a fresh progress file): a file written before a
+# field was added made the puzzle list throw KeyError and return 500, so the
+# page could not load at all for anyone who had already played.
+@testset "server: a progress file from an older version still loads" begin
+    dir = mktempdir()
+    try
+        path = joinpath(dir, "progress.json")
+        # Exactly the shape written before `manual` was introduced.
+        write(path, """
+        {"version":1,"puzzles":{
+          "greet":{"solved":true,"attempts":2,"hints_used":0,
+                   "solution_viewed":false,"draft":"x","best_ms":851,
+                   "solved_at":1788123356},
+          "fizzbuzz":{"solved":true,"attempts":44,"hints_used":3,
+                      "solution_viewed":true,"draft":"y","best_ms":883,
+                      "solved_at":1788127407}}}""")
+
+        port = rand(8300:8900)
+        cmd = `$(Base.julia_cmd()[1]) --startup-file=no --project=$ROOT
+               $(joinpath(ROOT, "server.jl")) --port $port --data $path
+               --no-validate --keep-alive`
+        proc = run(pipeline(cmd; stdout = devnull, stderr = devnull); wait = false)
+        try
+            up = false
+            for _ in 1:80
+                sleep(0.25)
+                try
+                    HTTP.get("http://127.0.0.1:$port/api/health"; retry = false)
+                    up = true
+                    break
+                catch
+                end
+            end
+            @test up
+
+            # The list is what the page loads first; this is what was 500ing.
+            r = HTTP.get("http://127.0.0.1:$port/api/puzzles"; status_exception = false)
+            @test r.status == 200
+            body = JSON3.read(String(r.body))
+            byid = Dict(String(p.id) => p for p in body.puzzles)
+            @test byid["greet"].solved === true
+            @test byid["greet"].manual === false     # backfilled, not absent
+            @test byid["greet"].clean  === true      # solved, no hints, no peek
+            @test byid["fizzbuzz"].clean === false   # hints + solution viewed
+            @test byid["two-sum"].solved === false   # never played
+
+            # The detail path took a different route to the same data.
+            r2 = HTTP.get("http://127.0.0.1:$port/api/puzzles/greet"; status_exception = false)
+            @test r2.status == 200
+            @test JSON3.read(String(r2.body)).manual === false
+
+            # Endpoints added alongside the field.
+            @test HTTP.post("http://127.0.0.1:$port/api/heartbeat"; status_exception = false).status == 200
+            @test HTTP.post("http://127.0.0.1:$port/api/goodbye";   status_exception = false).status == 200
+            r3 = HTTP.post("http://127.0.0.1:$port/api/puzzles/two-sum/status",
+                           ["Content-Type" => "application/json"], """{"solved":true}""";
+                           status_exception = false)
+            @test r3.status == 200
+            @test JSON3.read(String(r3.body)).manual === true
+        finally
+            kill(proc)
+        end
     finally
         rm(dir; recursive = true, force = true)
     end

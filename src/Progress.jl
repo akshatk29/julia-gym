@@ -13,7 +13,8 @@ module Progress
 using JSON3
 
 export ProgressStore, load_store, snapshot, record_attempt!, save_draft!,
-       take_hint!, mark_solution_viewed!, reset!, entry_for, set_solved!
+       take_hint!, mark_solution_viewed!, reset!, entry_for, set_solved!,
+       blank_entry, migrate!
 
 const LOCK = ReentrantLock()
 
@@ -57,7 +58,32 @@ function load_store(path::AbstractString)
         end
     end
     haskey(data, "puzzles") || (data["puzzles"] = Dict{String,Any}())
+    migrate!(data)
     return ProgressStore(String(path), data)
+end
+
+"""
+    migrate!(data)
+
+Backfill fields added since the file was written.
+
+A progress file outlives the code that wrote it. Without this, adding a field
+to `blank_entry` silently breaks every existing player's file — anything
+reading an entry directly gets a `KeyError` on the new key, which is how the
+puzzle list started returning 500 for anyone who had played before `manual`
+was introduced.
+"""
+function migrate!(data)
+    defaults = blank_entry()
+    puzzles = get(data, "puzzles", nothing)
+    puzzles isa AbstractDict || return data
+    for (_, e) in puzzles
+        e isa AbstractDict || continue
+        for (k, v) in defaults
+            haskey(e, k) || (e[k] = v)
+        end
+    end
+    return data
 end
 
 """

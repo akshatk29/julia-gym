@@ -105,11 +105,11 @@ puzzle_summary(p::Puzzle, entry) = Dict(
     "attempts"   => entry["attempts"],
     "hints_used" => entry["hints_used"],
     "best_ms"    => entry["best_ms"],
-    "manual"     => entry["manual"] === true,
+    "manual"     => get(entry, "manual", false) === true,
     # The three-dot mark is for a puzzle solved by passing its tests unaided —
     # not one ticked off by hand.
     "clean"      => entry["solved"] === true &&
-                    entry["manual"] !== true &&
+                    get(entry, "manual", false) !== true &&
                     entry["hints_used"] == 0 &&
                     entry["solution_viewed"] !== true,
 )
@@ -133,7 +133,7 @@ puzzle_detail(p::Puzzle, entry) = Dict(
     "hidden_count" => p.hidden_count,
     "hint_count"   => length(p.hints),
     "solved"       => entry["solved"],
-    "manual"       => entry["manual"] === true,
+    "manual"       => get(entry, "manual", false) === true,
     "attempts"     => entry["attempts"],
     "hints_used"   => entry["hints_used"],
     "solution_viewed" => entry["solution_viewed"],
@@ -258,7 +258,10 @@ end
 function api_puzzles(_)
     store = STATE[:store]
     snap = snapshot(store)["puzzles"]
-    entry(id) = get(snap, id, Progress.blank_entry())
+    # Merge over the defaults rather than indexing raw stored entries: a file
+    # written by an older version is missing whatever fields came later, and a
+    # KeyError here takes down the whole puzzle list.
+    entry(id) = merge(Progress.blank_entry(), get(snap, id, Dict{String,Any}()))
     return json_ok(Dict(
         "puzzles" => [puzzle_summary(p, entry(p.id)) for p in STATE[:puzzles]],
         "skipped" => [Dict("dir" => d, "reason" => r) for (d, r) in STATE[:problems]],
