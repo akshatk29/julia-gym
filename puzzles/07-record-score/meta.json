@@ -1,0 +1,10 @@
+{
+  "id": "record-score!", "title": "Record the Score", "track": "wrangling", "difficulty": 2,
+  "entrypoint": "record_score!",
+  "teaches": ["the ! naming convention", "mutating a Dict in place", "returning the mutated argument"],
+  "hints": [
+    "The `!` in the name is a promise to the caller: this function modifies its argument.",
+    "`scores[player] = points` inserts or overwrites in one step — no need to check first.",
+    "After mutating, return the same Dict you were given, not a copy."
+  ]
+}

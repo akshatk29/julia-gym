@@ -1,0 +1,10 @@
+{
+  "id": "max-subarray", "title": "Maximum Subarray", "track": "algorithms", "difficulty": 3,
+  "entrypoint": "max_subarray",
+  "teaches": ["Kadane's algorithm", "max", "accumulator patterns"],
+  "hints": [
+    "At each element decide: extend the run so far, or start fresh from this element.",
+    "`cur = max(v[i], cur + v[i])` makes that decision in one line.",
+    "Track `best = max(best, cur)` alongside it, and seed both from `v[1]` — not from 0, or an all-negative input comes out wrong."
+  ]
+}

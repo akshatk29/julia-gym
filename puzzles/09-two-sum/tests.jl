@@ -1,0 +1,6 @@
+case([2, 7, 11, 15], 9; expect = (1, 2))
+case([3, 2, 4], 6;      expect = (2, 3))
+hidden([1, 2], 3;       expect = (1, 2))
+hidden([1, 2, 3], 99;   expect = nothing)
+hidden(collect(1:1000), 1999; expect = (999, 1000))
+hidden([-1, -2, -3], -5;      expect = (2, 3))

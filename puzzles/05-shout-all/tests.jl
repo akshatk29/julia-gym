@@ -1,0 +1,5 @@
+case(["hi", "there"]; expect = ["HI", "THERE"])
+case(["Julia"];       expect = ["JULIA"])
+hidden(String[];               expect = String[])
+hidden(["MiXeD", "cAsE"];      expect = ["MIXED", "CASE"])
+hidden(["a", "b", "c", "d"];   expect = ["A", "B", "C", "D"])

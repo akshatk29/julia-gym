@@ -1,0 +1,13 @@
+{
+  "id": "divide-three-ways",
+  "title": "Three Kinds of Division",
+  "track": "idioms",
+  "difficulty": 2,
+  "entrypoint": "divide_three_ways",
+  "teaches": ["/ returns Float64", "÷ returns Int", "% remainder", "types are part of the answer"],
+  "hints": [
+    "`/` always gives a Float64 in Julia, even for 6 / 3.",
+    "Integer division is `÷` (type it as \\div then Tab) or `div(a, b)`.",
+    "The remainder is `%` or `rem(a, b)`. Return them as a 3-tuple in that order."
+  ]
+}

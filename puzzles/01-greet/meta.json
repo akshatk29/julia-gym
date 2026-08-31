@@ -1,0 +1,17 @@
+{
+  "id": "greet",
+  "title": "Say Hello",
+  "track": "idioms",
+  "difficulty": 1,
+  "entrypoint": "greet",
+  "teaches": [
+    "string interpolation",
+    "$(...) vs $name",
+    "! is a legal identifier character"
+  ],
+  "hints": [
+    "Julia interpolates with `$` inside a string: \"Hello, $name\".",
+    "`!` is a valid character in a Julia name, so `$name!` is read as the variable `name!` — which doesn't exist.",
+    "Wrap the expression in parentheses so the `!` stays out of it: `greet(name) = \"Hello, $(name)!\"`."
+  ]
+}

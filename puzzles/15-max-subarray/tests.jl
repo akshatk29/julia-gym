@@ -1,0 +1,7 @@
+case([-2, 1, -3, 4, -1, 2, 1, -5, 4]; expect = 6)
+case([-3, -1, -2];                    expect = -1)
+hidden(Int[];             expect = nothing)
+hidden([5];               expect = 5)
+hidden([-5];              expect = -5)
+hidden([1, 2, 3, 4];      expect = 10)
+hidden([2, -1, 2, -1, 2]; expect = 4)

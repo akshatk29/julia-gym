@@ -1,0 +1,5 @@
+case([1, 2, 3, 4, 5]; expect = [2, 3, 4])
+case([1, 2];          expect = Int[])
+hidden([10];          expect = Int[])
+hidden(Int[];         expect = Int[])
+hidden(["a", "b", "c", "d"]; expect = ["b", "c"])

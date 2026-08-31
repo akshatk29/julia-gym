@@ -1,0 +1,10 @@
+{
+  "id": "top-words", "title": "Top Words", "track": "wrangling", "difficulty": 3,
+  "entrypoint": "top_words",
+  "teaches": ["sort with by=", "rev=", "tie-breaking with a tuple key"],
+  "hints": [
+    "Start from `collect(counts)`, which gives you a Vector of `Pair`s.",
+    "`sort(v; by = f, rev = true)` sorts by whatever `f` returns, highest first.",
+    "To break ties alphabetically while counts go high-to-low, sort ascending by `(-count, word)`."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "group-by-initial", "title": "Group By Initial", "track": "wrangling", "difficulty": 3,
+  "entrypoint": "group_by_initial",
+  "teaches": ["Dict{Char,Vector{String}}", "push! into a fetched value", "get!"],
+  "hints": [
+    "The first character of a String `w` is `w[1]`, and it is a `Char`, not a String.",
+    "`get!(d, k, String[])` fetches the vector for `k`, inserting an empty one if absent.",
+    "Because it returns the vector itself, you can `push!` straight into the result of `get!`."
+  ]
+}

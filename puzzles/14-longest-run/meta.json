@@ -1,0 +1,10 @@
+{
+  "id": "longest-run", "title": "Longest Run", "track": "algorithms", "difficulty": 3,
+  "entrypoint": "longest_run",
+  "teaches": ["single-pass scanning", "enumerate", "accumulator state"],
+  "hints": [
+    "One pass is enough: track the current run length and the best seen so far.",
+    "`enumerate(v)` yields `(index, value)` pairs, so you can compare against `v[i-1]`.",
+    "Reset the current run to 1 whenever the value differs from the previous one."
+  ]
+}

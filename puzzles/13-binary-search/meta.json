@@ -1,0 +1,10 @@
+{
+  "id": "binary-search", "title": "Binary Search", "track": "algorithms", "difficulty": 3,
+  "entrypoint": "binary_search",
+  "teaches": ["ranges as bounds", "÷ for the midpoint", "returning nothing"],
+  "hints": [
+    "Bounds start at `1` and `length(v)`, not `0` and `length(v) - 1`.",
+    "The midpoint is `(lo + hi) ÷ 2` — use `÷`, since `/` would hand you a Float64 index.",
+    "Return the 1-based index on a hit and `nothing` when `lo` passes `hi`."
+  ]
+}

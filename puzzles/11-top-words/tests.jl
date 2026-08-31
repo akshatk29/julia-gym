@@ -1,0 +1,6 @@
+case(Dict("a" => 3, "b" => 1, "c" => 3), 2; expect = ["a", "c"])
+case(Dict("x" => 1), 5;                     expect = ["x"])
+hidden(Dict{String,Int}(), 3;               expect = String[])
+hidden(Dict("z" => 2, "y" => 2, "x" => 2), 3; expect = ["x", "y", "z"])
+hidden(Dict("a" => 1, "b" => 5, "c" => 3), 2; expect = ["b", "c"])
+hidden(Dict("a" => 1, "b" => 2), 0;           expect = String[])

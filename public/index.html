@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Julia Gym</title>
+  <link rel="stylesheet" href="vendor/codemirror.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <h1 class="wordmark">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        Julia Gym
+      </h1>
+      <span class="spacer"></span>
+      <span class="tally" id="tally"></span>
+      <button class="btn" id="theme-btn" title="Switch theme">Theme</button>
+      <button class="btn" id="reset-btn" title="Clear all progress">Reset</button>
+    </header>
+
+    <nav class="rail" id="rail" aria-label="Puzzles">
+      <div class="rail-head">Puzzles</div>
+      <div id="rail-list"></div>
+    </nav>
+
+    <main class="problem" id="problem">
+      <div class="empty">Loading…</div>
+    </main>
+
+    <section class="editor-pane">
+      <div class="toolbar">
+        <span class="fn-name" id="fn-name"></span>
+        <button class="btn" id="hint-btn">Hint</button>
+        <button class="btn" id="solution-btn">Solution</button>
+        <button class="btn primary" id="run-btn">Run<kbd>⌘↵</kbd></button>
+      </div>
+      <div class="editor-host" id="editor-host"></div>
+      <div class="results" id="results">
+        <div class="empty">Write a function, then press Run.</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="scrim" id="panel-scrim" hidden>
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+      <h3 id="panel-title"></h3>
+      <p class="sub" id="panel-sub"></p>
+      <div class="body" id="panel-body"></div>
+      <div class="actions" id="panel-actions"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="vendor/codemirror.js"></script>
+  <script src="vendor/julia.js"></script>
+  <script src="vendor/matchbrackets.js"></script>
+  <script src="vendor/closebrackets.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

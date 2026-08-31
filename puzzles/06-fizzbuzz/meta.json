@@ -1,0 +1,10 @@
+{
+  "id": "fizzbuzz", "title": "FizzBuzz, Returned", "track": "algorithms", "difficulty": 2,
+  "entrypoint": "fizzbuzz",
+  "teaches": ["conditionals", "returning a Vector{String} instead of printing", "string(x)"],
+  "hints": [
+    "Build and return a vector — do not print. The tests check the return value.",
+    "Check divisibility by 15 first, or you will never reach the FizzBuzz branch.",
+    "Every element must be a String, so a plain number needs `string(i)` around it."
+  ]
+}

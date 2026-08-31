@@ -1,0 +1,10 @@
+{
+  "id": "two-sum", "title": "Two Sum, One-Indexed", "track": "algorithms", "difficulty": 2,
+  "entrypoint": "two_sum",
+  "teaches": ["Dict lookup", "tuples", "1-based indexing"],
+  "hints": [
+    "A Dict maps each value you have already seen to the index you saw it at.",
+    "Julia indexes from 1 — if you port a Python solution, the answer is off by one.",
+    "Walk with `enumerate(nums)`, and for each `v` look up `target - v` before storing `v`."
+  ]
+}

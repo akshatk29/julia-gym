@@ -1,0 +1,10 @@
+{
+  "id": "word-count", "title": "Count the Words", "track": "wrangling", "difficulty": 2,
+  "entrypoint": "word_count",
+  "teaches": ["split", "Dict accumulation", "get with a default"],
+  "hints": [
+    "`split(s)` with no second argument splits on any run of whitespace.",
+    "`get(counts, w, 0)` returns 0 for a word you have not seen, so you never branch.",
+    "`counts[w] = get(counts, w, 0) + 1` is the whole loop body."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "middle-slice",
+  "title": "Drop the Ends",
+  "track": "idioms",
+  "difficulty": 1,
+  "entrypoint": "middle",
+  "teaches": ["1-based indexing", "end in slices"],
+  "hints": [
+    "Julia indexes from 1, so the second element is `v[2]`, not `v[1]`.",
+    "Inside an index, `end` means the last position — `v[end]` is the last element.",
+    "Put them together: `v[2:end-1]`."
+  ]
+}

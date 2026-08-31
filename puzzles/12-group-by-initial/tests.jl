@@ -1,0 +1,5 @@
+case(["ant", "bee", "ape"]; expect = Dict('a' => ["ant", "ape"], 'b' => ["bee"]))
+case(["one"];               expect = Dict('o' => ["one"]))
+hidden(String[];                     expect = Dict{Char,Vector{String}}())
+hidden(["", "a", ""];                expect = Dict('a' => ["a"]))
+hidden(["Ada", "ada"];               expect = Dict('A' => ["Ada"], 'a' => ["ada"]))

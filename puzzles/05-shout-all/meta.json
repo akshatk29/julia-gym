@@ -1,0 +1,10 @@
+{
+  "id": "shout-all", "title": "Shout Them All", "track": "idioms", "difficulty": 2,
+  "entrypoint": "shout_all",
+  "teaches": ["broadcasting with .", "elementwise function application"],
+  "hints": [
+    "`uppercase(\"abc\")` works on one string. You need it applied to every element.",
+    "Putting a `.` before the parentheses broadcasts a function over a collection.",
+    "`uppercase.(words)` — that dot is the whole answer, no loop and no map needed."
+  ]
+}

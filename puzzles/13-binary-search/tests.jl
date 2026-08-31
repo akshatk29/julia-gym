@@ -1,0 +1,7 @@
+case([1, 3, 5, 7, 9], 7; expect = 4)
+case([1, 3, 5], 4;       expect = nothing)
+hidden([1], 1;                  expect = 1)
+hidden(Int[], 5;                expect = nothing)
+hidden(collect(1:1000), 1000;   expect = 1000)
+hidden(collect(1:1000), 1;      expect = 1)
+hidden([2, 4, 6, 8], 5;         expect = nothing)

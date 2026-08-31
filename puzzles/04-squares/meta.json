@@ -1,0 +1,10 @@
+{
+  "id": "squares", "title": "Squares Up To N", "track": "idioms", "difficulty": 1,
+  "entrypoint": "squares",
+  "teaches": ["comprehensions", "ranges", "1-based counting"],
+  "hints": [
+    "A comprehension has the shape `[expr for x in range]`.",
+    "The range you want is `1:n` — inclusive on both ends, unlike Python's `range(n)`.",
+    "`[i^2 for i in 1:n]` — and `^` is exponentiation in Julia, not xor."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "palindrome?", "title": "Is It A Palindrome?", "track": "algorithms", "difficulty": 2,
+  "entrypoint": "palindrome",
+  "teaches": ["filter on strings", "lowercase", "reverse", "the ? naming convention"],
+  "hints": [
+    "First throw away everything that is not a letter, then compare.",
+    "`filter(isletter, s)` keeps only the letters; `lowercase` flattens the case.",
+    "`clean == reverse(clean)` finishes it — `reverse` works directly on a String."
+  ]
+}

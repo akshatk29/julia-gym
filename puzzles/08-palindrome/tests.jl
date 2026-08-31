@@ -1,0 +1,6 @@
+case("A man, a plan, a canal: Panama"; expect = true)
+case("hello";                          expect = false)
+hidden("";            expect = true)
+hidden("Was it a car or a cat I saw?"; expect = true)
+hidden("Julia";       expect = false)
+hidden("No 'x' in Nixon"; expect = true)

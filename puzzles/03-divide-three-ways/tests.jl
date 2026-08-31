@@ -1,0 +1,5 @@
+case(7, 2; expect = (3.5, 3, 1))
+case(6, 3; expect = (2.0, 2, 0))
+hidden(9, 4;   expect = (2.25, 2, 1))
+hidden(10, 5;  expect = (2.0, 2, 0))
+hidden(1, 8;   expect = (0.125, 0, 1))

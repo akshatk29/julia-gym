@@ -1,0 +1,5 @@
+case(5;  expect = ["1", "2", "Fizz", "4", "Buzz"])
+case(15; expect = ["1", "2", "Fizz", "4", "Buzz", "Fizz", "7", "8", "Fizz", "Buzz", "11", "Fizz", "13", "14", "FizzBuzz"])
+hidden(1;  expect = ["1"])
+hidden(0;  expect = String[])
+hidden(3;  expect = ["1", "2", "Fizz"])

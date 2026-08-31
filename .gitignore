@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Runtime state: player progress, drafts, and the server log.
+# These are yours, not the project's.
+data/
+
+# Built app bundle. Regenerate with ./build/make_app.sh — it bakes in an
+# absolute path for the machine it was built on, so it does not travel.
+Julia Gym.app/
+
+# Third-party editor and fonts. setup.jl fetches these on first run, and
+# server.jl calls setup.jl automatically when they are missing.
+public/vendor/
+
+# Icon intermediates; build/JuliaGym.icns is committed so the app can be
+# built without Pillow installed.
+build/*.iconset/

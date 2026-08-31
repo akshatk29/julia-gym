@@ -1,0 +1,5 @@
+case("the cat the"; expect = Dict("the" => 2, "cat" => 1))
+case("a a a";       expect = Dict("a" => 3))
+hidden("";                    expect = Dict{String,Int}())
+hidden("  spaced   out  ";    expect = Dict("spaced" => 1, "out" => 1))
+hidden("The the THE";         expect = Dict("The" => 1, "the" => 1, "THE" => 1))

@@ -1,0 +1,5 @@
+case(5; expect = [1, 4, 9, 16, 25])
+case(1; expect = [1])
+hidden(0;  expect = Int[])
+hidden(-3; expect = Int[])
+hidden(10; expect = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
